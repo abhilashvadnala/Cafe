@@ -1,56 +1,89 @@
 package com.abhilashvadnala.cafe;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
 
 import com.google.android.material.snackbar.Snackbar;
-import com.karumi.dexter.Dexter;
-import com.karumi.dexter.MultiplePermissionsReport;
-import com.karumi.dexter.PermissionToken;
-import com.karumi.dexter.listener.PermissionRequest;
-import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 
 import java.util.List;
 
 public class AcquirePermissions extends AppCompatActivity {
 
+    int index = 0;
+
+    String[] permissions = new String[]{
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.INTERNET,
+            Manifest.permission.ACCESS_NETWORK_STATE,
+            Manifest.permission.ACCESS_WIFI_STATE
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_acquire_permissions);
+        checkForPermission(permissions[index], index);
     }
 
-    private void acquirePermissions() {
-        Dexter.withActivity(this)
-                .withPermissions(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.INTERNET,
-                        Manifest.permission.ACCESS_NETWORK_STATE,
-                        Manifest.permission.ACCESS_WIFI_STATE
-                ).withListener(new MultiplePermissionsListener() {
-            @Override public void onPermissionsChecked(MultiplePermissionsReport report) {
-                if(report.areAllPermissionsGranted() == false) {
-                    showError("Please grant required permissions and try again.");
-                    if(report.isAnyPermissionPermanentlyDenied()) {
-                        showError("Go to Settings and grant required permissions");
-                    }
-                } else {
-                    goToHomeScreen();
-                }
-            }
-            @Override public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken token) {
 
+
+    private void checkForPermission(String permission, int RESULT_CODE) {
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(this, permission)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Permission is not granted
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed; request the permission
+                ActivityCompat.requestPermissions(this,
+                        new String[]{permission},
+                        RESULT_CODE);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
             }
-        }).check();
+        } else {
+            // Permission has already been granted
+            index++;
+            if(index == permissions.length) {
+                goToHomeScreen();
+            } else {
+                checkForPermission(permissions[index],index);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if(grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            index++;
+            if(index == permissions.length) {
+                goToHomeScreen();
+            } else {
+                checkForPermission(permissions[index],index);
+            }
+        } else {
+            showError("Please restart app and grant all permissions");
+        }
+        return;
     }
 
     private void goToHomeScreen() {
-        Intent mapScreen = new Intent(this, MainActivity.class);
+        Intent mapScreen = new Intent(this, MapActivity.class);
         startActivity(mapScreen);
     }
 
